@@ -3,6 +3,7 @@ use crate::*;
 pub struct CrabbyTTYPreAlphaJTAG {
     jtag_state: JTAGAdapterState,
     chunkshift_state: ChunkShifterJTAGAdapterState,
+    bitbang_state: BitbangJTAGAdapterState,
     usb: rusb::DeviceHandle<rusb::GlobalContext>,
 }
 impl AsMut<JTAGAdapterState> for CrabbyTTYPreAlphaJTAG {
@@ -13,6 +14,11 @@ impl AsMut<JTAGAdapterState> for CrabbyTTYPreAlphaJTAG {
 impl AsMut<ChunkShifterJTAGAdapterState> for CrabbyTTYPreAlphaJTAG {
     fn as_mut(&mut self) -> &mut ChunkShifterJTAGAdapterState {
         &mut self.chunkshift_state
+    }
+}
+impl AsMut<BitbangJTAGAdapterState> for CrabbyTTYPreAlphaJTAG {
+    fn as_mut(&mut self) -> &mut BitbangJTAGAdapterState {
+        &mut self.bitbang_state
     }
 }
 impl CrabbyTTYPreAlphaJTAG {
@@ -27,6 +33,7 @@ impl CrabbyTTYPreAlphaJTAG {
         Self {
             jtag_state: JTAGAdapterState::new(),
             chunkshift_state: ChunkShifterJTAGAdapterState::new(),
+            bitbang_state: BitbangJTAGAdapterState::new(),
             usb: device,
         }
     }

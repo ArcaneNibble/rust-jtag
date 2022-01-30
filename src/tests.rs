@@ -28,7 +28,7 @@ impl<'a> JTAGAdapter for TestNativeJTAGAdapter<'a> {
 struct TestBitbangJTAGAdapter {
     jtag_state: JTAGAdapterState,
     chunkshift_state: ChunkShifterJTAGAdapterState,
-    // bitbang_state: BitbangAdapterState,
+    bitbang_state: BitbangJTAGAdapterState,
 }
 impl AsMut<JTAGAdapterState> for TestBitbangJTAGAdapter {
     fn as_mut(&mut self) -> &mut JTAGAdapterState {
@@ -40,11 +40,17 @@ impl AsMut<ChunkShifterJTAGAdapterState> for TestBitbangJTAGAdapter {
         &mut self.chunkshift_state
     }
 }
+impl AsMut<BitbangJTAGAdapterState> for TestBitbangJTAGAdapter {
+    fn as_mut(&mut self) -> &mut BitbangJTAGAdapterState {
+        &mut self.bitbang_state
+    }
+}
 impl TestBitbangJTAGAdapter {
     fn new() -> Self {
         Self {
             jtag_state: JTAGAdapterState::new(),
             chunkshift_state: ChunkShifterJTAGAdapterState::new(),
+            bitbang_state: BitbangJTAGAdapterState::new(),
         }
     }
 }

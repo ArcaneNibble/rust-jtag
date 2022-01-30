@@ -8,5 +8,13 @@ fn main() {
     adapter.go_rti();
 
     let idcode = adapter.shift_dr_inout(&[false; 32], false);
-    println!("idcode {idcode:?}");
+
+    let mut idcode_ = 0u32;
+    for (i, bit) in idcode.into_iter().enumerate() {
+        if bit {
+            idcode_ |= 1 << i;
+        }
+    }
+
+    println!("idcode {idcode_:08X}");
 }
