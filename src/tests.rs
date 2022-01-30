@@ -95,7 +95,7 @@ impl TestStateJTAGAdapter {
 }
 
 impl StateTrackingJTAGAdapter for TestStateJTAGAdapter {
-    fn execute_stjtag_action(&mut self, _action: JTAGAction) -> JTAGOutput {
+    fn execute_stjtag_action(&mut self, _action: &JTAGAction) -> JTAGOutput {
         todo!()
     }
 }
