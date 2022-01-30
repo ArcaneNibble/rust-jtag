@@ -70,3 +70,48 @@ impl BitbangJTAGAdapter for CrabbyTTYPreAlphaJTAG {
         resbyte[0] & 1 != 0
     }
 }
+
+
+pub struct FTDIJTAG {
+    jtag_state: JTAGAdapterState,
+    chunkshift_state: ChunkShifterJTAGAdapterState,
+}
+impl AsMut<JTAGAdapterState> for FTDIJTAG {
+    fn as_mut(&mut self) -> &mut JTAGAdapterState {
+        &mut self.jtag_state
+    }
+}
+impl AsMut<ChunkShifterJTAGAdapterState> for FTDIJTAG {
+    fn as_mut(&mut self) -> &mut ChunkShifterJTAGAdapterState {
+        &mut self.chunkshift_state
+    }
+}
+impl FTDIJTAG {
+    pub fn new() -> Self {
+        println!("new");
+
+        Self {
+            jtag_state: JTAGAdapterState::new(),
+            chunkshift_state: ChunkShifterJTAGAdapterState::new(),
+        }
+    }
+}
+
+impl ChunkShifterJTAGAdapter for FTDIJTAG {
+    fn delay_ns(&mut self, _ns: u64) {
+        todo!()
+    }
+    fn set_clk_speed(&mut self, _clk_hz: u64) {
+        todo!()
+    }
+
+    fn shift_tms_chunk(&mut self, _tms_chunk: &[bool]) {
+        todo!()
+    }
+    fn shift_tdi_chunk(&mut self, _tdi_chunk: &[bool], _tms_exit: bool) {
+        todo!()
+    }
+    fn shift_tditdo_chunk(&mut self, _tdi_chunk: &[bool], _tms_exit: bool) -> Vec<bool> {
+        todo!()
+    }
+}
