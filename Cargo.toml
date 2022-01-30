@@ -1,5 +1,8 @@
 [package]
 name = "jtag"
+description = "Rust JTAG abstraction library"
+repository = "https://github.com/rqou/rust-jtag"
+license = "0BSD"
 version = "0.0.1"
 edition = "2021"
 
