@@ -842,3 +842,5 @@ impl<T: BitbangJTAGAdapter> ChunkShifterJTAGAdapter for T {
 
 #[cfg(test)]
 mod tests;
+
+pub mod drivers;
