@@ -765,8 +765,21 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
                 self.shift_tms_chunk(&[true; 5]);
                 JTAGOutput::NoData
             }
-            JTAGAction::GoViaStates(_) => {
-                todo!()
+            JTAGAction::GoViaStates(jtag_states) => {
+                let state_data: &mut ChunkShifterJTAGAdapterState = self.as_mut();
+                let mut prev_state = state_data.current_state;
+
+                for jtag_state in jtag_states {
+                    let path = jtag_transition(prev_state, *jtag_state);
+                    // TODO: batch?
+                    self.shift_tms_chunk(path);
+                    prev_state = *jtag_state;
+                }
+
+                let state_data: &mut ChunkShifterJTAGAdapterState = self.as_mut();
+                state_data.current_state = prev_state;
+
+                JTAGOutput::NoData
             }
             JTAGAction::ShiftBits {
                 bits_tdi,
