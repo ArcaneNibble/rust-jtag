@@ -799,6 +799,19 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
                 capture,
                 tms_exit,
             } => {
+                let state_data: &mut ChunkShifterJTAGAdapterState = self.as_mut();
+                let cur_state = state_data.current_state;
+
+                // xxx this shouldn't be required
+                assert!(cur_state == JTAGState::ShiftDR || cur_state == JTAGState::ShiftIR);
+
+                if cur_state == JTAGState::ShiftDR {
+                    state_data.current_state = JTAGState::Exit1DR;
+                }
+                if cur_state == JTAGState::ShiftIR {
+                    state_data.current_state = JTAGState::Exit1IR;
+                }
+
                 if *capture {
                     let ret = self.shift_tditdo_chunk(bits_tdi, *tms_exit);
                     JTAGOutput::CapturedBits(ret)
