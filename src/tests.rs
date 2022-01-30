@@ -27,6 +27,7 @@ impl<'a> JTAGAdapter for TestNativeJTAGAdapter<'a> {
 
 struct TestBitbangJTAGAdapter {
     jtag_state: JTAGAdapterState,
+    chunkshift_state: ChunkShifterJTAGAdapterState,
     // bitbang_state: BitbangAdapterState,
 }
 impl AsMut<JTAGAdapterState> for TestBitbangJTAGAdapter {
@@ -34,15 +35,25 @@ impl AsMut<JTAGAdapterState> for TestBitbangJTAGAdapter {
         &mut self.jtag_state
     }
 }
+impl AsMut<ChunkShifterJTAGAdapterState> for TestBitbangJTAGAdapter {
+    fn as_mut(&mut self) -> &mut ChunkShifterJTAGAdapterState {
+        &mut self.chunkshift_state
+    }
+}
 impl TestBitbangJTAGAdapter {
     fn new() -> Self {
         Self {
             jtag_state: JTAGAdapterState::new(),
+            chunkshift_state: ChunkShifterJTAGAdapterState::new(),
         }
     }
 }
 
 impl BitbangJTAGAdapter for TestBitbangJTAGAdapter {
+    fn set_clk_speed(&mut self, _clk_hz: u64) {
+        todo!()
+    }
+
     fn shift_one_bit(&mut self, _tms: bool, _tdi: bool) -> bool {
         todo!()
     }
@@ -50,22 +61,35 @@ impl BitbangJTAGAdapter for TestBitbangJTAGAdapter {
 
 struct TestChunkJTAGAdapter {
     jtag_state: JTAGAdapterState,
-    // bitbang_state: BitbangAdapterState,
+    chunkshift_state: ChunkShifterJTAGAdapterState,
 }
 impl AsMut<JTAGAdapterState> for TestChunkJTAGAdapter {
     fn as_mut(&mut self) -> &mut JTAGAdapterState {
         &mut self.jtag_state
     }
 }
+impl AsMut<ChunkShifterJTAGAdapterState> for TestChunkJTAGAdapter {
+    fn as_mut(&mut self) -> &mut ChunkShifterJTAGAdapterState {
+        &mut self.chunkshift_state
+    }
+}
 impl TestChunkJTAGAdapter {
     fn new() -> Self {
         Self {
             jtag_state: JTAGAdapterState::new(),
+            chunkshift_state: ChunkShifterJTAGAdapterState::new(),
         }
     }
 }
 
 impl ChunkShifterJTAGAdapter for TestChunkJTAGAdapter {
+    fn delay_ns(&mut self, _ns: u64) {
+        todo!()
+    }
+    fn set_clk_speed(&mut self, _clk_hz: u64) {
+        todo!()
+    }
+
     fn shift_tms_chunk(&mut self, _tms_chunk: &[bool]) {
         todo!()
     }
@@ -79,7 +103,6 @@ impl ChunkShifterJTAGAdapter for TestChunkJTAGAdapter {
 
 struct TestStateJTAGAdapter {
     jtag_state: JTAGAdapterState,
-    // bitbang_state: BitbangAdapterState,
 }
 impl AsMut<JTAGAdapterState> for TestStateJTAGAdapter {
     fn as_mut(&mut self) -> &mut JTAGAdapterState {

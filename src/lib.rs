@@ -280,10 +280,27 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
 }
 
 pub trait BitbangJTAGAdapter {
+    fn set_clk_speed(&mut self, clk_hz: u64);
     fn shift_one_bit(&mut self, tms: bool, tdi: bool) -> bool;
 }
 
+#[derive(Clone, Debug)]
+pub struct ChunkShifterJTAGAdapterState {
+    current_state: JTAGState,
+}
+impl ChunkShifterJTAGAdapterState {
+    pub fn new() -> Self {
+        Self {
+            // FIXME?
+            current_state: JTAGState::TestLogicReset,
+        }
+    }
+}
+
 pub trait ChunkShifterJTAGAdapter {
+    fn delay_ns(&mut self, ns: u64);
+    fn set_clk_speed(&mut self, clk_hz: u64);
+
     fn shift_tms_chunk(&mut self, tms_chunk: &[bool]);
     fn shift_tdi_chunk(&mut self, tdi_chunk: &[bool], tms_exit: bool);
     fn shift_tditdo_chunk(&mut self, tdi_chunk: &[bool], tms_exit: bool) -> Vec<bool>;
@@ -430,21 +447,90 @@ impl<T: StateTrackingJTAGAdapter + AsMut<JTAGAdapterState>> JTAGAdapter for T {
     }
 }
 
-impl<T: ChunkShifterJTAGAdapter> StateTrackingJTAGAdapter for T {
-    fn execute_stjtag_action(&mut self, _action: &JTAGAction) -> JTAGOutput {
-        todo!()
+impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrackingJTAGAdapter
+    for T
+{
+    fn execute_stjtag_action(&mut self, action: &JTAGAction) -> JTAGOutput {
+        match action {
+            JTAGAction::ShiftIR { .. }
+            | JTAGAction::ShiftDR { .. }
+            | JTAGAction::SetIR { .. }
+            | JTAGAction::ReadReg { .. }
+            | JTAGAction::WriteReg { .. } => {
+                unreachable!()
+            }
+
+            JTAGAction::DelayNS(ns) => {
+                self.delay_ns(*ns);
+                JTAGOutput::NoData
+            }
+            JTAGAction::SetClkSpeed(clk_hz) => {
+                self.set_clk_speed(*clk_hz);
+                JTAGOutput::NoData
+            }
+            JTAGAction::ResetToTLR => {
+                self.shift_tms_chunk(&[true; 5]);
+                JTAGOutput::NoData
+            }
+            JTAGAction::GoViaStates(_) => {
+                todo!()
+            }
+            JTAGAction::ShiftBits {
+                bits_tdi,
+                capture,
+                tms_exit,
+            } => {
+                if *capture {
+                    let ret = self.shift_tditdo_chunk(bits_tdi, *tms_exit);
+                    JTAGOutput::CapturedBits(ret)
+                } else {
+                    self.shift_tdi_chunk(bits_tdi, *tms_exit);
+                    JTAGOutput::NoData
+                }
+            }
+        }
     }
 }
 
 impl<T: BitbangJTAGAdapter> ChunkShifterJTAGAdapter for T {
-    fn shift_tms_chunk(&mut self, _tms_chunk: &[bool]) {
-        todo!()
+    fn delay_ns(&mut self, ns: u64) {
+        std::thread::sleep(std::time::Duration::from_nanos(ns))
     }
-    fn shift_tdi_chunk(&mut self, _tdi_chunk: &[bool], _tms_exit: bool) {
-        todo!()
+    fn set_clk_speed(&mut self, clk_hz: u64) {
+        BitbangJTAGAdapter::set_clk_speed(self, clk_hz);
     }
-    fn shift_tditdo_chunk(&mut self, _tdi_chunk: &[bool], _tms_exit: bool) -> Vec<bool> {
-        todo!()
+
+    fn shift_tms_chunk(&mut self, tms_chunk: &[bool]) {
+        for tms in tms_chunk {
+            self.shift_one_bit(*tms, false);
+        }
+    }
+    fn shift_tdi_chunk(&mut self, tdi_chunk: &[bool], tms_exit: bool) {
+        for (i, tdi) in tdi_chunk.into_iter().enumerate() {
+            self.shift_one_bit(
+                if tms_exit && i == tdi_chunk.len() - 1 {
+                    true
+                } else {
+                    false
+                },
+                *tdi,
+            );
+        }
+    }
+    fn shift_tditdo_chunk(&mut self, tdi_chunk: &[bool], tms_exit: bool) -> Vec<bool> {
+        let mut ret = Vec::with_capacity(tdi_chunk.len());
+        for (i, tdi) in tdi_chunk.into_iter().enumerate() {
+            let tdo = self.shift_one_bit(
+                if tms_exit && i == tdi_chunk.len() - 1 {
+                    true
+                } else {
+                    false
+                },
+                *tdi,
+            );
+            ret.push(tdo);
+        }
+        ret
     }
 }
 
