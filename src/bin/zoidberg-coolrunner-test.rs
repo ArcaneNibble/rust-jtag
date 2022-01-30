@@ -17,4 +17,15 @@ fn main() {
     }
 
     println!("idcode {idcode_:08X}");
+
+    let idcode2 = adapter.shift_dr_inout(&[false; 32], false);
+
+    let mut idcode2_ = 0u32;
+    for (i, bit) in idcode2.into_iter().enumerate() {
+        if bit {
+            idcode2_ |= 1 << i;
+        }
+    }
+
+    println!("idcode2 {idcode2_:08X}");
 }
