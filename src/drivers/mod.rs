@@ -20,12 +20,14 @@ impl CrabbyTTYPreAlphaJTAG {
         println!("new");
 
         let device = rusb::open_device_with_vid_pid(0xf055, 0x0000).unwrap();
-        device.write_control(0x40, 1, 0, 0, &[], std::time::Duration::from_secs(1)).unwrap();
+        device
+            .write_control(0x40, 1, 0, 0, &[], std::time::Duration::from_secs(1))
+            .unwrap();
 
         Self {
             jtag_state: JTAGAdapterState::new(),
             chunkshift_state: ChunkShifterJTAGAdapterState::new(),
-            usb: device
+            usb: device,
         }
     }
 }
@@ -46,7 +48,14 @@ impl BitbangJTAGAdapter for CrabbyTTYPreAlphaJTAG {
         }
 
         let resbyte = &mut [0u8];
-        let usbret = self.usb.read_control(0xC0, 3, reqbyte as u16, 0, resbyte, std::time::Duration::from_secs(1));
+        let usbret = self.usb.read_control(
+            0xC0,
+            3,
+            reqbyte as u16,
+            0,
+            resbyte,
+            std::time::Duration::from_secs(1),
+        );
         assert_eq!(usbret.unwrap(), 1);
 
         println!("tms {tms} tdi {tdi} --> {resbyte:?}");
