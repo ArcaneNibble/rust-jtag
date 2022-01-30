@@ -1,6 +1,6 @@
 use crate::*;
 
-use ftdi_mpsse::{MpsseCmdExecutor, mpsse};
+use ftdi_mpsse::{mpsse, MpsseCmdExecutor};
 
 pub struct CrabbyTTYPreAlphaJTAG {
     jtag_state: JTAGAdapterState,
@@ -73,7 +73,6 @@ impl BitbangJTAGAdapter for CrabbyTTYPreAlphaJTAG {
     }
 }
 
-
 pub struct FTDIJTAG {
     jtag_state: JTAGAdapterState,
     chunkshift_state: ChunkShifterJTAGAdapterState,
@@ -97,7 +96,7 @@ impl FTDIJTAG {
 
         let mpsse = ftdi_mpsse::MpsseSettings {
             reset: true,
-            in_transfer_size: 64*1024,
+            in_transfer_size: 64 * 1024,
             read_timeout: std::time::Duration::from_secs(1),
             write_timeout: std::time::Duration::from_secs(1),
             latency_timer: std::time::Duration::from_millis(10),
@@ -107,7 +106,7 @@ impl FTDIJTAG {
 
         device.init(&mpsse).unwrap();
 
-        mpsse!{
+        mpsse! {
             const (INIT_DATA, INIT_LEN) = {
                 set_gpio_lower(0b0000, 0b1011);
             };
@@ -115,7 +114,6 @@ impl FTDIJTAG {
 
         assert_eq!(INIT_LEN, 0);
         device.send(&INIT_DATA).unwrap();
-
 
         Self {
             jtag_state: JTAGAdapterState::new(),
@@ -141,7 +139,11 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
         let mut inbitsi = 0;
 
         while bits_remaining > 0 {
-            let bits = if bits_remaining > 7 { 7 } else { bits_remaining };
+            let bits = if bits_remaining > 7 {
+                7
+            } else {
+                bits_remaining
+            };
             let mut thisbyte = 0u8;
             for i in 0..bits {
                 if tms_chunk[inbitsi + i] {
@@ -170,7 +172,7 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
     fn shift_tditdo_chunk(&mut self, tdi_chunk: &[bool], tms_exit: bool) -> Vec<bool> {
         println!("shift tditdo {tdi_chunk:?} tms? {tms_exit}");
 
-        assert!(tdi_chunk.len() > 1);   // XXX
+        assert!(tdi_chunk.len() > 1); // XXX
 
         let mut bytes = Vec::new();
         let mut rxbytes = 0;
@@ -179,7 +181,11 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
 
         while bits_remaining > 0 {
             // fixme this is super inefficient
-            let bits = if bits_remaining > 8 { 8 } else { bits_remaining };
+            let bits = if bits_remaining > 8 {
+                8
+            } else {
+                bits_remaining
+            };
             let mut thisbyte = 0u8;
             for i in 0..bits {
                 if tdi_chunk[inbitsi + i] {
@@ -229,10 +235,14 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
         let mut bits_remaining = tdi_chunk.len() - 1;
         let mut rxbytebuf_i = 0;
         while bits_remaining > 0 {
-            let bits = if bits_remaining > 8 { 8 } else { bits_remaining };
+            let bits = if bits_remaining > 8 {
+                8
+            } else {
+                bits_remaining
+            };
 
             for i in (8 - bits)..8 {
-                ret.push((rxbytebuf[rxbytebuf_i] & (1 << i)) != 0);                
+                ret.push((rxbytebuf[rxbytebuf_i] & (1 << i)) != 0);
             }
 
             bits_remaining -= bits;
