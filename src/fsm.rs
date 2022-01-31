@@ -437,3 +437,57 @@ impl JTAGState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::JTAGState;
+
+    #[test]
+    fn test_fsm_transitions() {
+        for state_a in [
+            JTAGState::TestLogicReset,
+            JTAGState::RunTestIdle,
+            JTAGState::SelectDR,
+            JTAGState::CaptureDR,
+            JTAGState::ShiftDR,
+            JTAGState::Exit1DR,
+            JTAGState::PauseDR,
+            JTAGState::Exit2DR,
+            JTAGState::UpdateDR,
+            JTAGState::SelectIR,
+            JTAGState::CaptureIR,
+            JTAGState::ShiftIR,
+            JTAGState::Exit1IR,
+            JTAGState::PauseIR,
+            JTAGState::Exit2IR,
+            JTAGState::UpdateIR,
+        ] {
+            for state_b in [
+                JTAGState::TestLogicReset,
+                JTAGState::RunTestIdle,
+                JTAGState::SelectDR,
+                JTAGState::CaptureDR,
+                JTAGState::ShiftDR,
+                JTAGState::Exit1DR,
+                JTAGState::PauseDR,
+                JTAGState::Exit2DR,
+                JTAGState::UpdateDR,
+                JTAGState::SelectIR,
+                JTAGState::CaptureIR,
+                JTAGState::ShiftIR,
+                JTAGState::Exit1IR,
+                JTAGState::PauseIR,
+                JTAGState::Exit2IR,
+                JTAGState::UpdateIR,
+            ] {
+                let path = state_a.path_to(state_b);
+
+                let mut state = state_a;
+                for &tms in path {
+                    state = state.transition(tms);
+                }
+                assert_eq!(state, state_b);
+            }
+        }
+    }
+}
