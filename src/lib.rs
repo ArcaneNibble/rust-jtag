@@ -1,3 +1,5 @@
+use bitvec::prelude::*;
+
 mod fsm;
 pub use fsm::JTAGState;
 
@@ -22,7 +24,7 @@ pub enum JTAGAction {
     /// transition from Shift-IR/DR to Exit1-IR/DR). Otherwise, the final bit
     /// will be shifted with TMS=0.
     ShiftBits {
-        bits_tdi: Vec<bool>,
+        bits_tdi: BitVec,
         capture: bool,
         tms_exit: bool,
     },
@@ -161,7 +163,7 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
     fn shift_bits_out(&mut self, bits: &[bool], tms_exit: bool) {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ShiftBits {
-            bits_tdi: bits.to_vec(),
+            bits_tdi: bits.iter().collect(),
             capture: false,
             tms_exit,
         });
@@ -169,7 +171,7 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
     fn shift_bits_inout(&mut self, bits: &[bool], tms_exit: bool) -> Vec<bool> {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ShiftBits {
-            bits_tdi: bits.to_vec(),
+            bits_tdi: bits.iter().collect(),
             capture: true,
             tms_exit,
         });
@@ -322,7 +324,7 @@ impl<T: StateTrackingJTAGAdapter + AsMut<JTAGAdapterState>> JTAGAdapter for T {
                         ]));
 
                         let ret = self.execute_stjtag_action(&JTAGAction::ShiftBits {
-                            bits_tdi: ir.clone(),
+                            bits_tdi: ir.iter().collect(),
                             capture: *capture,
                             tms_exit: true,
                         });
@@ -345,7 +347,7 @@ impl<T: StateTrackingJTAGAdapter + AsMut<JTAGAdapterState>> JTAGAdapter for T {
                         ]));
 
                         let ret = self.execute_stjtag_action(&JTAGAction::ShiftBits {
-                            bits_tdi: dr.clone(),
+                            bits_tdi: dr.iter().collect(),
                             capture: *capture,
                             tms_exit: true,
                         });
@@ -370,7 +372,7 @@ impl<T: StateTrackingJTAGAdapter + AsMut<JTAGAdapterState>> JTAGAdapter for T {
                         ]));
 
                         self.execute_stjtag_action(&JTAGAction::ShiftBits {
-                            bits_tdi: ir.clone(),
+                            bits_tdi: ir.iter().collect(),
                             capture: false,
                             tms_exit: true,
                         });
@@ -387,7 +389,7 @@ impl<T: StateTrackingJTAGAdapter + AsMut<JTAGAdapterState>> JTAGAdapter for T {
                         ]));
 
                         self.execute_stjtag_action(&JTAGAction::ShiftBits {
-                            bits_tdi: ir.clone(),
+                            bits_tdi: ir.iter().collect(),
                             capture: false,
                             tms_exit: true,
                         });
@@ -397,7 +399,7 @@ impl<T: StateTrackingJTAGAdapter + AsMut<JTAGAdapterState>> JTAGAdapter for T {
                         ]));
 
                         let ret = self.execute_stjtag_action(&JTAGAction::ShiftBits {
-                            bits_tdi: vec![false; *drlen],
+                            bits_tdi: BitVec::repeat(false, *drlen),
                             capture: true,
                             tms_exit: true,
                         });
@@ -414,7 +416,7 @@ impl<T: StateTrackingJTAGAdapter + AsMut<JTAGAdapterState>> JTAGAdapter for T {
                         ]));
 
                         self.execute_stjtag_action(&JTAGAction::ShiftBits {
-                            bits_tdi: ir.clone(),
+                            bits_tdi: ir.iter().collect(),
                             capture: false,
                             tms_exit: true,
                         });
@@ -424,7 +426,7 @@ impl<T: StateTrackingJTAGAdapter + AsMut<JTAGAdapterState>> JTAGAdapter for T {
                         ]));
 
                         self.execute_stjtag_action(&JTAGAction::ShiftBits {
-                            bits_tdi: dr.clone(),
+                            bits_tdi: dr.iter().collect(),
                             capture: false,
                             tms_exit: true,
                         });
@@ -491,10 +493,13 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
                 state_data.current_state = state_data.current_state.transition(*tms_exit);
 
                 if *capture {
-                    let ret = self.shift_tditdo_chunk(bits_tdi, *tms_exit);
+                    let ret = self.shift_tditdo_chunk(
+                        &bits_tdi.iter().by_vals().collect::<Vec<_>>(),
+                        *tms_exit,
+                    );
                     JTAGOutput::CapturedBits(ret)
                 } else {
-                    self.shift_tdi_chunk(bits_tdi, *tms_exit);
+                    self.shift_tdi_chunk(&bits_tdi.iter().by_vals().collect::<Vec<_>>(), *tms_exit);
                     JTAGOutput::NoData
                 }
             }
