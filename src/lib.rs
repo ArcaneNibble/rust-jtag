@@ -473,13 +473,15 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
             JTAGAction::GoViaStates(jtag_states) => {
                 let state_data: &mut ChunkShifterJTAGAdapterState = self.as_mut();
                 let mut prev_state = state_data.current_state;
+                let mut path = BitVec::new();
 
                 for jtag_state in jtag_states {
-                    let path = prev_state.path_to(*jtag_state);
-                    // TODO: batch?
-                    self.shift_tms_chunk(path);
+                    let pathelem = prev_state.path_to(*jtag_state);
+                    path.extend_from_bitslice(pathelem);
                     prev_state = *jtag_state;
                 }
+
+                self.shift_tms_chunk(&path);
 
                 let state_data: &mut ChunkShifterJTAGAdapterState = self.as_mut();
                 state_data.current_state = prev_state;
