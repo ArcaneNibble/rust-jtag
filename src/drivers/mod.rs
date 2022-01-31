@@ -131,7 +131,7 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
         println!("ignoring clock speed {clk_hz} hz");
     }
 
-    fn shift_tms_chunk(&mut self, tms_chunk: &[bool]) {
+    fn shift_tms_chunk(&mut self, tms_chunk: &BitSlice) {
         println!("shift tms {tms_chunk:?}");
 
         let mut bytes = Vec::new();
@@ -163,13 +163,13 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
 
         self.ftdi.send(&bytes).unwrap();
     }
-    fn shift_tdi_chunk(&mut self, tdi_chunk: &[bool], tms_exit: bool) {
+    fn shift_tdi_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool) {
         println!("shift tdi {tdi_chunk:?} tms? {tms_exit}");
 
         // super fixme
         self.shift_tditdo_chunk(tdi_chunk, tms_exit);
     }
-    fn shift_tditdo_chunk(&mut self, tdi_chunk: &[bool], tms_exit: bool) -> Vec<bool> {
+    fn shift_tditdo_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool) -> BitVec {
         println!("shift tditdo {tdi_chunk:?} tms? {tms_exit}");
 
         assert!(tdi_chunk.len() > 1); // XXX
@@ -252,6 +252,6 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
         ret.push((rxbytebuf[rxbytebuf.len() - 1] & 0x80) != 0);
         assert_eq!(ret.len(), tdi_chunk.len());
 
-        ret
+        ret.iter().collect()
     }
 }

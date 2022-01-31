@@ -96,13 +96,13 @@ impl ChunkShifterJTAGAdapter for TestChunkJTAGAdapter {
         todo!()
     }
 
-    fn shift_tms_chunk(&mut self, _tms_chunk: &[bool]) {
+    fn shift_tms_chunk(&mut self, _tms_chunk: &BitSlice) {
         todo!()
     }
-    fn shift_tdi_chunk(&mut self, _tdi_chunk: &[bool], _tms_exit: bool) {
+    fn shift_tdi_chunk(&mut self, _tdi_chunk: &BitSlice, _tms_exit: bool) {
         todo!()
     }
-    fn shift_tditdo_chunk(&mut self, _tdi_chunk: &[bool], _tms_exit: bool) -> Vec<bool> {
+    fn shift_tditdo_chunk(&mut self, _tdi_chunk: &BitSlice, _tms_exit: bool) -> BitVec {
         todo!()
     }
 }

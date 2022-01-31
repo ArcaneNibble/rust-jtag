@@ -297,9 +297,9 @@ pub trait ChunkShifterJTAGAdapter {
     fn delay_ns(&mut self, ns: u64);
     fn set_clk_speed(&mut self, clk_hz: u64);
 
-    fn shift_tms_chunk(&mut self, tms_chunk: &[bool]);
-    fn shift_tdi_chunk(&mut self, tdi_chunk: &[bool], tms_exit: bool);
-    fn shift_tditdo_chunk(&mut self, tdi_chunk: &[bool], tms_exit: bool) -> Vec<bool>;
+    fn shift_tms_chunk(&mut self, tms_chunk: &BitSlice);
+    fn shift_tdi_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool);
+    fn shift_tditdo_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool) -> BitVec;
 }
 
 pub trait StateTrackingJTAGAdapter {
@@ -465,7 +465,7 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
                 JTAGOutput::NoData
             }
             JTAGAction::ResetToTLR => {
-                self.shift_tms_chunk(&[true; 5]);
+                self.shift_tms_chunk(bits![1; 5]);
                 JTAGOutput::NoData
             }
             JTAGAction::GoViaStates(jtag_states) => {
@@ -475,7 +475,7 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
                 for jtag_state in jtag_states {
                     let path = prev_state.path_to(*jtag_state);
                     // TODO: batch?
-                    self.shift_tms_chunk(path);
+                    self.shift_tms_chunk(&path.iter().collect::<BitVec>());
                     prev_state = *jtag_state;
                 }
 
@@ -494,12 +494,12 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
 
                 if *capture {
                     let ret = self.shift_tditdo_chunk(
-                        &bits_tdi.iter().by_vals().collect::<Vec<_>>(),
+                        bits_tdi,
                         *tms_exit,
                     );
                     JTAGOutput::CapturedBits(ret.iter().collect())
                 } else {
-                    self.shift_tdi_chunk(&bits_tdi.iter().by_vals().collect::<Vec<_>>(), *tms_exit);
+                    self.shift_tdi_chunk(bits_tdi, *tms_exit);
                     JTAGOutput::NoData
                 }
             }
@@ -515,7 +515,7 @@ impl<T: BitbangJTAGAdapter + AsMut<BitbangJTAGAdapterState>> ChunkShifterJTAGAda
         BitbangJTAGAdapter::set_clk_speed(self, clk_hz);
     }
 
-    fn shift_tms_chunk(&mut self, tms_chunk: &[bool]) {
+    fn shift_tms_chunk(&mut self, tms_chunk: &BitSlice) {
         for tms in tms_chunk {
             let tdo = self.shift_one_bit(*tms, false);
             // XXX this can be optimized maybe
@@ -523,7 +523,7 @@ impl<T: BitbangJTAGAdapter + AsMut<BitbangJTAGAdapterState>> ChunkShifterJTAGAda
             state_data.last_tdo = tdo;
         }
     }
-    fn shift_tdi_chunk(&mut self, tdi_chunk: &[bool], tms_exit: bool) {
+    fn shift_tdi_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool) {
         for (i, tdi) in tdi_chunk.into_iter().enumerate() {
             let tdo = self.shift_one_bit(
                 if tms_exit && i == tdi_chunk.len() - 1 {
@@ -538,7 +538,7 @@ impl<T: BitbangJTAGAdapter + AsMut<BitbangJTAGAdapterState>> ChunkShifterJTAGAda
             state_data.last_tdo = tdo;
         }
     }
-    fn shift_tditdo_chunk(&mut self, tdi_chunk: &[bool], tms_exit: bool) -> Vec<bool> {
+    fn shift_tditdo_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool) -> BitVec {
         let mut ret = Vec::with_capacity(tdi_chunk.len());
         if tdi_chunk.len() > 0 {
             let state_data: &mut BitbangJTAGAdapterState = self.as_mut();
@@ -562,7 +562,7 @@ impl<T: BitbangJTAGAdapter + AsMut<BitbangJTAGAdapterState>> ChunkShifterJTAGAda
                 ret.push(tdo);
             }
         }
-        ret
+        ret.iter().collect()
     }
 }
 
