@@ -61,45 +61,30 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
     }
 
     fn shift_tms_chunk(&mut self, tms_chunk: &BitSlice) {
-        println!("shift tms {tms_chunk:?}");
+        println!("shift tms {tms_chunk:b}");
 
         let mut bytes = Vec::new();
-        let mut bits_remaining = tms_chunk.len();
-        let mut inbitsi = 0;
 
-        while bits_remaining > 0 {
-            let bits = if bits_remaining > 7 {
-                7
-            } else {
-                bits_remaining
-            };
+        for subchunk in tms_chunk.chunks(7) {
+            bytes.push(0b01001011u8); // tms out on -ve
+            bytes.push((subchunk.len() - 1) as u8);
             let mut thisbyte = 0u8;
-            for i in 0..bits {
-                if tms_chunk[inbitsi + i] {
-                    thisbyte |= 1 << i;
-                }
-            }
-
-            bytes.push(0b01001011); // tms out on -ve
-            bytes.push((bits - 1) as u8);
+            thisbyte.view_bits_mut::<Lsb0>()[..subchunk.len()].clone_from_bitslice(subchunk);
             bytes.push(thisbyte);
-
-            bits_remaining -= bits;
-            inbitsi += bits;
         }
 
-        println!("the resulting buffer is {bytes:?}");
+        println!("the resulting buffer is {bytes:x?}");
 
         self.ftdi.send(&bytes).unwrap();
     }
     fn shift_tdi_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool) {
-        println!("shift tdi {tdi_chunk:?} tms? {tms_exit}");
+        println!("shift tdi {tdi_chunk:b} tms? {tms_exit}");
 
         // super fixme
         self.shift_tditdo_chunk(tdi_chunk, tms_exit);
     }
     fn shift_tditdo_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool) -> BitVec {
-        println!("shift tditdo {tdi_chunk:?} tms? {tms_exit}");
+        println!("shift tditdo {tdi_chunk:b} tms? {tms_exit}");
 
         assert!(tdi_chunk.len() > 1); // XXX
 
@@ -152,12 +137,12 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
         // wtf?
         bytes.push(0x87);
 
-        println!("the resulting buffer is {bytes:?} rx {rxbytes}");
+        println!("the resulting buffer is {bytes:x?} rx {rxbytes}");
         self.ftdi.send(&bytes).unwrap();
 
         let mut rxbytebuf = vec![0; rxbytes];
         self.ftdi.recv(&mut rxbytebuf).unwrap();
-        println!("got back {rxbytebuf:?}");
+        println!("got back {rxbytebuf:x?}");
 
         // fixme fixme fixme
         let mut ret = Vec::new();
