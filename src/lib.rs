@@ -236,7 +236,9 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
 
     fn set_ir(&mut self, ir: &[bool]) {
         let state: &mut JTAGAdapterState = self.as_mut();
-        state.queued_actions.push(JTAGAction::SetIR(ir.iter().collect()));
+        state
+            .queued_actions
+            .push(JTAGAction::SetIR(ir.iter().collect()));
     }
     fn read_reg(&mut self, ir: &[bool], drlen: usize) -> Vec<bool> {
         let state: &mut JTAGAdapterState = self.as_mut();
@@ -475,7 +477,7 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
                 for jtag_state in jtag_states {
                     let path = prev_state.path_to(*jtag_state);
                     // TODO: batch?
-                    self.shift_tms_chunk(&path.iter().collect::<BitVec>());
+                    self.shift_tms_chunk(path);
                     prev_state = *jtag_state;
                 }
 
@@ -493,10 +495,7 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
                 state_data.current_state = state_data.current_state.transition(*tms_exit);
 
                 if *capture {
-                    let ret = self.shift_tditdo_chunk(
-                        bits_tdi,
-                        *tms_exit,
-                    );
+                    let ret = self.shift_tditdo_chunk(bits_tdi, *tms_exit);
                     JTAGOutput::CapturedBits(ret.iter().collect())
                 } else {
                     self.shift_tdi_chunk(bits_tdi, *tms_exit);

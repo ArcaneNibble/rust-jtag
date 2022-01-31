@@ -64,8 +64,8 @@ def search(start, end):
         q.append((c0, path + [False]))
         q.append((c1, path + [True]))
         # print(q)
-print("pub const fn jtag_transition(start: JTAGState, end: JTAGState) -> &'static [bool] {")
-print("match start {")
+print("pub fn path_to(self: &JTAGState, end: JTAGState) -> &'static BitSlice {")
+print("match self {")
 
 for start in JTAGState:
     print(f"JTAGState::{start._name_} => {{")
@@ -74,12 +74,12 @@ for start in JTAGState:
         print(f"JTAGState::{end._name_} => {{")
         path = search(start, end)
         # print(start, end, path)
-        print("&[")
+        print("bits![static ")
         for pathelem in path:
             if pathelem:
-                print("true,")
+                print("1,")
             else:
-                print("false,")
+                print("0,")
         print("]")
         print("}")
     print("}")
