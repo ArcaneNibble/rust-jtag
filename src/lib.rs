@@ -35,7 +35,7 @@ pub enum JTAGAction {
     /// If [pause][Self::ShiftIR::pause] is `false`, then take the TAP to
     /// Run-Test/Idle. Otherwise, take the TAP to Pause-IR.
     ShiftIR {
-        ir: Vec<bool>,
+        ir: BitVec,
         capture: bool,
         pause: bool,
     },
@@ -45,7 +45,7 @@ pub enum JTAGAction {
     /// If [pause][Self::ShiftDR::pause] is `false`, then take the TAP to
     /// Run-Test/Idle. Otherwise, take the TAP to Pause-DR.
     ShiftDR {
-        dr: Vec<bool>,
+        dr: BitVec,
         capture: bool,
         pause: bool,
     },
@@ -188,7 +188,7 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
     fn shift_ir_out(&mut self, ir: &[bool], pause: bool) {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ShiftIR {
-            ir: ir.to_vec(),
+            ir: ir.iter().collect(),
             capture: false,
             pause,
         });
@@ -196,7 +196,7 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
     fn shift_ir_inout(&mut self, ir: &[bool], pause: bool) -> Vec<bool> {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ShiftIR {
-            ir: ir.to_vec(),
+            ir: ir.iter().collect(),
             capture: true,
             pause,
         });
@@ -212,7 +212,7 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
     fn shift_dr_out(&mut self, dr: &[bool], pause: bool) {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ShiftDR {
-            dr: dr.to_vec(),
+            dr: dr.iter().collect(),
             capture: true,
             pause,
         });
@@ -220,7 +220,7 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
     fn shift_dr_inout(&mut self, dr: &[bool], pause: bool) -> Vec<bool> {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ShiftDR {
-            dr: dr.to_vec(),
+            dr: dr.iter().collect(),
             capture: true,
             pause,
         });
