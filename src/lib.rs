@@ -53,15 +53,15 @@ pub enum JTAGAction {
     /// If the current IR value is not equal to this value, take the TAP to
     /// Shift-IR, shift in this value, and then take the TAP to Run-Test/Idle.
     /// If the current IR value is equal, do nothing.
-    SetIR(Vec<bool>),
+    SetIR(BitVec),
     /// Set the current IR to this value if it is not already, and then
     /// take the TAP to Shift-DR. Capture the data, and then take the TAP to
     /// Run-Test/Idle.
-    ReadReg { ir: Vec<bool>, drlen: usize },
+    ReadReg { ir: BitVec, drlen: usize },
     /// Set the current IR to [ir][Self::WriteReg::ir] if it is not already,
     /// and then take the TAP to Shift-DR. Shift in the data from
     /// [dr][Self::WriteReg::dr], and then take the TAP to Run-Test/Idle.
-    WriteReg { ir: Vec<bool>, dr: Vec<bool> },
+    WriteReg { ir: BitVec, dr: BitVec },
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
@@ -236,12 +236,12 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
 
     fn set_ir(&mut self, ir: &[bool]) {
         let state: &mut JTAGAdapterState = self.as_mut();
-        state.queued_actions.push(JTAGAction::SetIR(ir.to_vec()));
+        state.queued_actions.push(JTAGAction::SetIR(ir.iter().collect()));
     }
     fn read_reg(&mut self, ir: &[bool], drlen: usize) -> Vec<bool> {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ReadReg {
-            ir: ir.to_vec(),
+            ir: ir.iter().collect(),
             drlen,
         });
 
@@ -256,8 +256,8 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
     fn write_reg(&mut self, ir: &[bool], dr: &[bool]) {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::WriteReg {
-            ir: ir.to_vec(),
-            dr: dr.to_vec(),
+            ir: ir.iter().collect(),
+            dr: dr.iter().collect(),
         });
     }
 }
