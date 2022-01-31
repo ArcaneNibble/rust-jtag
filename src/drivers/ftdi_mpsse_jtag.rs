@@ -1,6 +1,6 @@
 use crate::*;
 
-use ftdi_mpsse::{mpsse, MpsseCmdExecutor};
+use ftdi_mpsse::{mpsse, ClockBits, MpsseCmd, MpsseCmdExecutor};
 
 pub struct FTDIJTAG {
     jtag_state: JTAGAdapterState,
@@ -107,7 +107,7 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
                 }
             }
 
-            bytes.push(0b00111011); // tdi out on -ve, in on +ve
+            bytes.push(ClockBits::LsbPosIn as u8); // tdi out on -ve, in on +ve
             bytes.push((bits - 1) as u8);
             bytes.push(thisbyte);
 
@@ -134,8 +134,7 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
         }
         rxbytes += 1;
 
-        // wtf?
-        bytes.push(0x87);
+        bytes.push(MpsseCmd::SendImmediate as u8);
 
         println!("the resulting buffer is {bytes:x?} rx {rxbytes}");
         self.ftdi.send(&bytes).unwrap();
