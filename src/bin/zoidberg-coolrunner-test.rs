@@ -49,4 +49,19 @@ fn main() {
     }
 
     println!("idcode3 {idcode3:08X}");
+
+    adapter.go_shiftdr();
+    adapter.shift_bits_out(bits![0; 15], false);
+    let idcode4_b = adapter.shift_bits_inout(bits![0; 17], true);
+    adapter.go_rti();
+    adapter.flush();
+
+    let mut idcode4 = 0u32;
+    for (i, bit) in idcode4_b.into_iter().enumerate() {
+        if bit {
+            idcode4 |= 1 << (i + 15);
+        }
+    }
+
+    println!("idcode4 (parial) {idcode4:08X}");
 }

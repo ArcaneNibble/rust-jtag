@@ -1,6 +1,6 @@
 use crate::*;
 
-use ftdi_mpsse::{mpsse, ClockBits, ClockData, MpsseCmd, MpsseCmdExecutor};
+use ftdi_mpsse::*;
 
 pub struct FTDIJTAG {
     jtag_state: JTAGAdapterState,
@@ -80,8 +80,57 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
     fn shift_tdi_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool) {
         println!("shift tdi {tdi_chunk:b} tms? {tms_exit}");
 
-        // super fixme
-        self.shift_tditdo_chunk(tdi_chunk, tms_exit);
+        // this is the main portion that will be sent as bytes
+        let tdi_chunk_ = if tms_exit {
+            assert!(tdi_chunk.len() > 1); // XXX error reporting?
+            &tdi_chunk[..(tdi_chunk.len() - 1)]
+        } else {
+            tdi_chunk
+        };
+
+        let mut mpsse_bytes = Vec::new();
+
+        for subchunk in tdi_chunk_.chunks(65536 * 8) {
+            // bytes portion first
+            let chunk_bytes = subchunk.len() / 8; // deliberate truncate
+
+            mpsse_bytes.push(ClockDataOut::LsbNeg as u8); // tdi out on -ve
+            mpsse_bytes.push((chunk_bytes - 1) as u8);
+            mpsse_bytes.push(((chunk_bytes - 1) >> 8) as u8);
+
+            let cur_mpsse_len = mpsse_bytes.len();
+            mpsse_bytes.resize(cur_mpsse_len + chunk_bytes, 0u8);
+            mpsse_bytes[cur_mpsse_len..cur_mpsse_len + chunk_bytes]
+                .view_bits_mut::<Lsb0>()
+                .clone_from_bitslice(&subchunk[..chunk_bytes * 8]);
+
+            // bits portion
+            let chunk_bits = subchunk.len() % 8;
+            if chunk_bits != 0 {
+                mpsse_bytes.push(ClockBitsOut::LsbNeg as u8); // tdi out on -ve
+                mpsse_bytes.push((chunk_bits - 1) as u8);
+                let mut thisbyte = 0u8;
+                thisbyte.view_bits_mut::<Lsb0>()[..chunk_bits]
+                    .clone_from_bitslice(&subchunk[chunk_bytes * 8..]);
+                mpsse_bytes.push(thisbyte);
+            }
+        }
+
+        if tms_exit {
+            // handle TMS
+            mpsse_bytes.push(0b01001011); // tms out on -ve
+            mpsse_bytes.push(0);
+            if tdi_chunk[tdi_chunk.len() - 1] {
+                mpsse_bytes.push(0b10000001);
+            } else {
+                mpsse_bytes.push(0b00000001);
+            }
+        }
+
+        mpsse_bytes.push(MpsseCmd::SendImmediate as u8);
+
+        println!("the resulting buffer is {mpsse_bytes:x?}");
+        self.ftdi.send(&mpsse_bytes).unwrap();
     }
     fn shift_tditdo_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool) -> BitVec {
         println!("shift tditdo {tdi_chunk:b} tms? {tms_exit}");
