@@ -127,8 +127,6 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
             }
         }
 
-        mpsse_bytes.push(MpsseCmd::SendImmediate as u8);
-
         println!("the resulting buffer is {mpsse_bytes:x?}");
         self.ftdi.send(&mpsse_bytes).unwrap();
     }
