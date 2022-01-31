@@ -14,3 +14,6 @@ bitvec = "1"
 ftdi = "0.1.3"
 ftdi-mpsse = "0.1.0"
 rusb = "0.9"
+
+[patch.crates-io]
+ftdi-mpsse = { path = "../ftdi-mpsse" }

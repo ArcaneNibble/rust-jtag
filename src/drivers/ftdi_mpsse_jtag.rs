@@ -66,7 +66,7 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
         let mut bytes = Vec::new();
 
         for subchunk in tms_chunk.chunks(7) {
-            bytes.push(0b01001011u8); // tms out on -ve
+            bytes.push(ClockTMSOut::NegEdge as u8); // tms out on -ve
             bytes.push((subchunk.len() - 1) as u8);
             let mut thisbyte = 0u8;
             thisbyte.view_bits_mut::<Lsb0>()[..subchunk.len()].clone_from_bitslice(subchunk);
@@ -118,7 +118,7 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
 
         if tms_exit {
             // handle TMS
-            mpsse_bytes.push(0b01001011); // tms out on -ve
+            mpsse_bytes.push(ClockTMSOut::NegEdge as u8); // tms out on -ve
             mpsse_bytes.push(0);
             if tdi_chunk[tdi_chunk.len() - 1] {
                 mpsse_bytes.push(0b10000001);
@@ -180,7 +180,7 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
 
         if tms_exit {
             // handle TMS
-            mpsse_bytes.push(0b01101011); // tms out on -ve, in on +ve
+            mpsse_bytes.push(ClockTMS::NegTMSPosTDO as u8); // tms out on -ve, in on +ve
             mpsse_bytes.push(0);
             if tdi_chunk[tdi_chunk.len() - 1] {
                 mpsse_bytes.push(0b10000001);
