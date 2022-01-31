@@ -160,18 +160,18 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
         self.go_to_state(JTAGState::UpdateIR);
     }
 
-    fn shift_bits_out(&mut self, bits: &[bool], tms_exit: bool) {
+    fn shift_bits_out(&mut self, bits: &BitSlice, tms_exit: bool) {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ShiftBits {
-            bits_tdi: bits.iter().collect(),
+            bits_tdi: bits.to_owned(),
             capture: false,
             tms_exit,
         });
     }
-    fn shift_bits_inout(&mut self, bits: &[bool], tms_exit: bool) -> Vec<bool> {
+    fn shift_bits_inout(&mut self, bits: &BitSlice, tms_exit: bool) -> BitVec {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ShiftBits {
-            bits_tdi: bits.iter().collect(),
+            bits_tdi: bits.to_owned(),
             capture: true,
             tms_exit,
         });
@@ -179,24 +179,24 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
         let mut ret = self.flush();
         let retlen = ret.len();
         if let JTAGOutput::CapturedBits(out) = &mut ret[retlen - 1] {
-            out.split_off(0).iter().by_vals().collect()
+            out.split_off(0)
         } else {
             unreachable!()
         }
     }
 
-    fn shift_ir_out(&mut self, ir: &[bool], pause: bool) {
+    fn shift_ir_out(&mut self, ir: &BitSlice, pause: bool) {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ShiftIR {
-            ir: ir.iter().collect(),
+            ir: ir.to_owned(),
             capture: false,
             pause,
         });
     }
-    fn shift_ir_inout(&mut self, ir: &[bool], pause: bool) -> Vec<bool> {
+    fn shift_ir_inout(&mut self, ir: &BitSlice, pause: bool) -> BitVec {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ShiftIR {
-            ir: ir.iter().collect(),
+            ir: ir.to_owned(),
             capture: true,
             pause,
         });
@@ -204,23 +204,23 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
         let mut ret = self.flush();
         let retlen = ret.len();
         if let JTAGOutput::CapturedBits(out) = &mut ret[retlen - 1] {
-            out.split_off(0).iter().by_vals().collect()
+            out.split_off(0)
         } else {
             unreachable!()
         }
     }
-    fn shift_dr_out(&mut self, dr: &[bool], pause: bool) {
+    fn shift_dr_out(&mut self, dr: &BitSlice, pause: bool) {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ShiftDR {
-            dr: dr.iter().collect(),
+            dr: dr.to_owned(),
             capture: true,
             pause,
         });
     }
-    fn shift_dr_inout(&mut self, dr: &[bool], pause: bool) -> Vec<bool> {
+    fn shift_dr_inout(&mut self, dr: &BitSlice, pause: bool) -> BitVec {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ShiftDR {
-            dr: dr.iter().collect(),
+            dr: dr.to_owned(),
             capture: true,
             pause,
         });
@@ -228,38 +228,38 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
         let mut ret = self.flush();
         let retlen = ret.len();
         if let JTAGOutput::CapturedBits(out) = &mut ret[retlen - 1] {
-            out.split_off(0).iter().by_vals().collect()
+            out.split_off(0)
         } else {
             unreachable!()
         }
     }
 
-    fn set_ir(&mut self, ir: &[bool]) {
+    fn set_ir(&mut self, ir: &BitSlice) {
         let state: &mut JTAGAdapterState = self.as_mut();
         state
             .queued_actions
-            .push(JTAGAction::SetIR(ir.iter().collect()));
+            .push(JTAGAction::SetIR(ir.to_owned()));
     }
-    fn read_reg(&mut self, ir: &[bool], drlen: usize) -> Vec<bool> {
+    fn read_reg(&mut self, ir: &BitSlice, drlen: usize) -> BitVec {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::ReadReg {
-            ir: ir.iter().collect(),
+            ir: ir.to_owned(),
             drlen,
         });
 
         let mut ret = self.flush();
         let retlen = ret.len();
         if let JTAGOutput::CapturedBits(out) = &mut ret[retlen - 1] {
-            out.split_off(0).iter().by_vals().collect()
+            out.split_off(0)
         } else {
             unreachable!()
         }
     }
-    fn write_reg(&mut self, ir: &[bool], dr: &[bool]) {
+    fn write_reg(&mut self, ir: &BitSlice, dr: &BitSlice) {
         let state: &mut JTAGAdapterState = self.as_mut();
         state.queued_actions.push(JTAGAction::WriteReg {
-            ir: ir.iter().collect(),
-            dr: dr.iter().collect(),
+            ir: ir.to_owned(),
+            dr: dr.to_owned(),
         });
     }
 }

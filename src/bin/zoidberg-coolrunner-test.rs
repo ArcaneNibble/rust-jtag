@@ -1,3 +1,4 @@
+use bitvec::prelude::*;
 use jtag::JTAGAdapter;
 
 fn main() {
@@ -7,7 +8,7 @@ fn main() {
     adapter.reset_to_tlr();
     adapter.go_rti();
 
-    let idcode = adapter.shift_dr_inout(&[false; 32], false);
+    let idcode = adapter.shift_dr_inout(bits![0; 32], false);
 
     let mut idcode_ = 0u32;
     for (i, bit) in idcode.into_iter().enumerate() {
@@ -18,7 +19,7 @@ fn main() {
 
     println!("idcode {idcode_:08X}");
 
-    let idcode2 = adapter.shift_dr_inout(&[false; 32], false);
+    let idcode2 = adapter.shift_dr_inout(bits![0; 32], false);
 
     let mut idcode2_ = 0u32;
     for (i, bit) in idcode2.into_iter().enumerate() {
@@ -30,8 +31,8 @@ fn main() {
     println!("idcode2 {idcode2_:08X}");
 
     adapter.go_shiftdr();
-    let idcode3_a = adapter.shift_bits_inout(&[false; 16], false);
-    let idcode3_b = adapter.shift_bits_inout(&[false; 16], true);
+    let idcode3_a = adapter.shift_bits_inout(bits![0; 16], false);
+    let idcode3_b = adapter.shift_bits_inout(bits![0; 16], true);
     adapter.go_rti();
     adapter.flush();
 
