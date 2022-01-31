@@ -69,7 +69,7 @@ pub enum JTAGOutput {
     /// No data was stored for the corresponding JTAG action
     NoData,
     /// Captured TDO data for the corresponding JTAG action
-    CapturedBits(Vec<bool>),
+    CapturedBits(BitVec),
 }
 
 #[derive(Clone, Debug)]
@@ -179,7 +179,7 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
         let mut ret = self.flush();
         let retlen = ret.len();
         if let JTAGOutput::CapturedBits(out) = &mut ret[retlen - 1] {
-            out.split_off(0)
+            out.split_off(0).iter().by_vals().collect()
         } else {
             unreachable!()
         }
@@ -204,7 +204,7 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
         let mut ret = self.flush();
         let retlen = ret.len();
         if let JTAGOutput::CapturedBits(out) = &mut ret[retlen - 1] {
-            out.split_off(0)
+            out.split_off(0).iter().by_vals().collect()
         } else {
             unreachable!()
         }
@@ -228,7 +228,7 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
         let mut ret = self.flush();
         let retlen = ret.len();
         if let JTAGOutput::CapturedBits(out) = &mut ret[retlen - 1] {
-            out.split_off(0)
+            out.split_off(0).iter().by_vals().collect()
         } else {
             unreachable!()
         }
@@ -248,7 +248,7 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
         let mut ret = self.flush();
         let retlen = ret.len();
         if let JTAGOutput::CapturedBits(out) = &mut ret[retlen - 1] {
-            out.split_off(0)
+            out.split_off(0).iter().by_vals().collect()
         } else {
             unreachable!()
         }
@@ -497,7 +497,7 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
                         &bits_tdi.iter().by_vals().collect::<Vec<_>>(),
                         *tms_exit,
                     );
-                    JTAGOutput::CapturedBits(ret)
+                    JTAGOutput::CapturedBits(ret.iter().collect())
                 } else {
                     self.shift_tdi_chunk(&bits_tdi.iter().by_vals().collect::<Vec<_>>(), *tms_exit);
                     JTAGOutput::NoData
