@@ -28,4 +28,24 @@ fn main() {
     }
 
     println!("idcode2 {idcode2_:08X}");
+
+    adapter.go_shiftdr();
+    let idcode3_a = adapter.shift_bits_inout(&[false; 16], false);
+    let idcode3_b = adapter.shift_bits_inout(&[false; 16], true);
+    adapter.go_rti();
+    adapter.flush();
+
+    let mut idcode3 = 0u32;
+    for (i, bit) in idcode3_a.into_iter().enumerate() {
+        if bit {
+            idcode3 |= 1 << i;
+        }
+    }
+    for (i, bit) in idcode3_b.into_iter().enumerate() {
+        if bit {
+            idcode3 |= 1 << (i + 16);
+        }
+    }
+
+    println!("idcode3 {idcode3:08X}");
 }
