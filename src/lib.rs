@@ -236,9 +236,7 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
 
     fn set_ir(&mut self, ir: &BitSlice) {
         let state: &mut JTAGAdapterState = self.as_mut();
-        state
-            .queued_actions
-            .push(JTAGAction::SetIR(ir.to_owned()));
+        state.queued_actions.push(JTAGAction::SetIR(ir.to_owned()));
     }
     fn read_reg(&mut self, ir: &BitSlice, drlen: usize) -> BitVec {
         let state: &mut JTAGAdapterState = self.as_mut();
