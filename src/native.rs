@@ -1,5 +1,7 @@
 use crate::*;
 
+use bitvec::prelude::*;
+
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 #[non_exhaustive]
 /// Represents all possible actions that can be performed on a JTAG adapter

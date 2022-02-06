@@ -1,5 +1,7 @@
 use crate::*;
 
+use bitvec::prelude::*;
+
 pub trait BitbangJTAGAdapter {
     fn set_clk_speed(&mut self, clk_hz: u64) -> u64;
     fn shift_one_bit(&mut self, tms: bool, tdi: bool) -> bool;

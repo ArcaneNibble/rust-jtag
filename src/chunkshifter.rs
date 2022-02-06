@@ -1,5 +1,7 @@
 use crate::*;
 
+use bitvec::prelude::*;
+
 #[derive(Clone, Debug)]
 pub struct ChunkShifterJTAGAdapterState {
     current_state: JTAGState,

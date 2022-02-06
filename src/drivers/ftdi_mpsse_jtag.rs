@@ -1,5 +1,6 @@
 use crate::*;
 
+use bitvec::prelude::*;
 use ftdi_mpsse::*;
 
 pub struct FTDIJTAG {

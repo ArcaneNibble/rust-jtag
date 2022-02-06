@@ -1,5 +1,7 @@
 use crate::*;
 
+use bitvec::prelude::*;
+
 struct TestNativeJTAGAdapter<'a> {
     jtag_state: JTAGAdapterState,
     test_actions: &'a [JTAGAction],
