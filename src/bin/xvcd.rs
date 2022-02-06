@@ -20,7 +20,7 @@ fn main() {
         let mut cmdbuf = [0u8; 16];
         let mut tmsbuf = [0u8; 512];
         let mut tdibuf = [0u8; 512];
-        let mut tdobuf = [0u8; 512];
+        let mut tdobuf;
 
         let peeklen = sock.peek(&mut cmdbuf[..2]).unwrap();
         if peeklen != 2 {
@@ -57,7 +57,9 @@ fn main() {
                 sock.read(&mut tmsbuf[..num_bytes]).unwrap();
                 sock.read(&mut tdibuf[..num_bytes]).unwrap();
 
-                // println!("{:x?} {:x?}", &tmsbuf[..num_bytes], &tdibuf[..num_bytes]);
+                tdobuf = tdibuf.clone();
+
+                println!("{:x?} {:x?}", &tmsbuf[..num_bytes], &tdibuf[..num_bytes]);
 
                 let tms_vec = &tmsbuf.view_bits::<Lsb0>()[..num_bits];
                 let tdi_vec = &tdibuf.view_bits::<Lsb0>()[..num_bits];
@@ -143,7 +145,7 @@ fn main() {
                 assert_eq!(q.len(), q2.len());
 
                 let result = adapter.execute_actions(&q);
-                println!("out {:?}", result);
+                // println!("out {:?}", result);
                 assert_eq!(q2.len(), result.len());
 
                 for i in 0..result.len() {
@@ -154,7 +156,7 @@ fn main() {
                     }
                 }
 
-                println!("{:x?}", tdo_vec);
+                // println!("{:x?}", tdo_vec);
 
                 sock.write(&tdobuf[..num_bytes]).unwrap();
             }
