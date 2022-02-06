@@ -34,8 +34,7 @@ fn main() {
                     println!("unknown command! {:x?}", cmdbuf);
                     continue;
                 }
-                // this seems busted no matter what?
-                sock.write(b"xvcServer_v1.0:512\n").unwrap();
+                sock.write(b"xvcServer_v1.0:5120\n").unwrap();
             }
             [b's', b'h'] => {
                 sock.read(&mut cmdbuf[..6]).unwrap();
