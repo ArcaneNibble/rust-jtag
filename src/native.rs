@@ -409,16 +409,18 @@ mod tests {
 
             for action in actions {
                 ret.push(match action {
-                    JTAGAction::ShiftBits{bits_tdi, capture, ..} => {
+                    JTAGAction::ShiftBits {
+                        bits_tdi, capture, ..
+                    } => {
                         if *capture {
                             JTAGOutput::CapturedBits(bits_tdi.clone())
                         } else {
                             JTAGOutput::NoData
                         }
-                    },
+                    }
                     _ => JTAGOutput::NoData,
                 });
-            };
+            }
 
             ret
         }

@@ -2,6 +2,35 @@ use crate::*;
 
 use bitvec::prelude::*;
 
+/// Trait for JTAG adapters that are built around shifting blocks of bits
+/// at a time (e.g. FTDI MPSSE, Xilinx Platform Cable USB)
+pub trait ChunkShifterJTAGAdapter {
+    /// Wait for a given number of nanoseconds
+    fn delay_ns(&mut self, ns: u64) -> u64;
+    /// Set the JTAG clock speed in Hz
+    fn set_clk_speed(&mut self, clk_hz: u64) -> u64;
+
+    /// Shift the given bits out on TMS
+    fn shift_tms_chunk(&mut self, tms_chunk: &BitSlice);
+    /// Shift the given bits out on TDI. If `tms_exit` is `true`,
+    /// the final bit will be shifted with TMS=1 (which would cause a
+    /// transition from Shift-IR/DR to Exit1-IR/DR). Otherwise, the final bit
+    /// will be shifted with TMS=0.
+    fn shift_tdi_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool);
+    /// Shift the given bits out on TDI. Capture data on TDO.
+    /// If `tms_exit` is `true`,
+    /// the final bit will be shifted with TMS=1 (which would cause a
+    /// transition from Shift-IR/DR to Exit1-IR/DR). Otherwise, the final bit
+    /// will be shifted with TMS=0.
+    ///
+    // FIXME: Explain how the timing here is "behind" and different from
+    // the bitbang mode
+    fn shift_tditdo_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool) -> BitVec;
+}
+
+/// State required to be stored by a [ChunkShifterJTAGAdapter] in order for
+/// this crate to automatically implement [StateTrackingJTAGAdapter] and
+/// eventually [JTAGAdapter] for it.
 #[derive(Clone, Debug)]
 pub struct ChunkShifterJTAGAdapterState {
     current_state: JTAGState,
@@ -15,15 +44,7 @@ impl ChunkShifterJTAGAdapterState {
     }
 }
 
-pub trait ChunkShifterJTAGAdapter {
-    fn delay_ns(&mut self, ns: u64) -> u64;
-    fn set_clk_speed(&mut self, clk_hz: u64) -> u64;
-
-    fn shift_tms_chunk(&mut self, tms_chunk: &BitSlice);
-    fn shift_tdi_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool);
-    fn shift_tditdo_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool) -> BitVec;
-}
-
+/// Automatically turn [ChunkShifterJTAGAdapter] into a [StateTrackingJTAGAdapter]
 impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrackingJTAGAdapter
     for T
 {
