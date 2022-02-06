@@ -90,6 +90,7 @@ fn main() {
                     let tms = tms_vec[i];
                     // let _tdi = tdi_vec[i];
                     if current_state == JTAGState::ShiftDR || current_state == JTAGState::ShiftIR {
+                        is_shifting = true;
                         // println!("shift a bit");
                         shifting_bits += 1;
                         current_state = current_state.transition(tms);
