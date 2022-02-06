@@ -377,33 +377,50 @@ pub trait JTAGAdapter: AsMut<JTAGAdapterState> {
 mod tests {
     use crate::*;
 
+    use bitvec::prelude::*;
+
     #[test]
     fn compile_test_trait_obj_safe() {
         let _: &dyn JTAGAdapter;
     }
 
-    struct TestNativeJTAGAdapter<'a> {
+    struct TestNativeJTAGAdapter {
         jtag_state: JTAGAdapterState,
-        test_actions: &'a [JTAGAction],
+        test_actions: Vec<JTAGAction>,
     }
-    impl<'a> AsMut<JTAGAdapterState> for TestNativeJTAGAdapter<'a> {
+    impl AsMut<JTAGAdapterState> for TestNativeJTAGAdapter {
         fn as_mut(&mut self) -> &mut JTAGAdapterState {
             &mut self.jtag_state
         }
     }
-    impl<'a> TestNativeJTAGAdapter<'a> {
-        fn new(test_actions: &'a [JTAGAction]) -> Self {
+    impl TestNativeJTAGAdapter {
+        fn new(test_actions: &[JTAGAction]) -> Self {
             Self {
                 jtag_state: JTAGAdapterState::new(),
-                test_actions,
+                test_actions: test_actions.to_vec(),
             }
         }
     }
 
-    impl<'a> JTAGAdapter for TestNativeJTAGAdapter<'a> {
+    impl JTAGAdapter for TestNativeJTAGAdapter {
         fn execute_actions(&mut self, actions: &[JTAGAction]) -> Vec<JTAGOutput> {
             assert_eq!(actions, self.test_actions);
-            vec![JTAGOutput::NoData; actions.len()]
+            let mut ret = Vec::new();
+
+            for action in actions {
+                ret.push(match action {
+                    JTAGAction::ShiftBits{bits_tdi, capture, ..} => {
+                        if *capture {
+                            JTAGOutput::CapturedBits(bits_tdi.clone())
+                        } else {
+                            JTAGOutput::NoData
+                        }
+                    },
+                    _ => JTAGOutput::NoData,
+                });
+            };
+
+            ret
         }
     }
 
@@ -411,8 +428,31 @@ mod tests {
     fn test_native_adapter_fns() {
         let mut testadapter = TestNativeJTAGAdapter::new(&[]);
 
-        testadapter.test_actions = &[JTAGAction::ResetToTLR];
+        testadapter.test_actions = vec![JTAGAction::ResetToTLR];
         testadapter.reset_to_tlr();
         testadapter.flush();
+
+        // test buffering
+        testadapter.test_actions = vec![];
+        testadapter.reset_to_tlr();
+        testadapter.go_rti();
+        testadapter.go_tlr();
+        testadapter.shift_bits_out(bits![1, 0, 1, 0], false);
+        testadapter.test_actions = vec![
+            JTAGAction::ResetToTLR,
+            JTAGAction::GoViaStates(vec![JTAGState::RunTestIdle]),
+            JTAGAction::GoViaStates(vec![JTAGState::TestLogicReset]),
+            JTAGAction::ShiftBits {
+                bits_tdi: bitvec![1, 0, 1, 0],
+                capture: false,
+                tms_exit: false,
+            },
+            JTAGAction::ShiftBits {
+                bits_tdi: bitvec![0, 1, 0, 1],
+                capture: true,
+                tms_exit: true,
+            },
+        ];
+        testadapter.shift_bits_inout(bits![0, 1, 0, 1], true);
     }
 }
