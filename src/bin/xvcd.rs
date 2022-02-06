@@ -11,7 +11,7 @@ fn main() {
     let (mut sock, addr) = listener.accept().unwrap();
     println!("connected to {:?}", addr);
     sock.set_nodelay(true).unwrap();
-    
+
     let mut current_state = JTAGState::TestLogicReset;
 
     loop {
@@ -58,16 +58,73 @@ fn main() {
                 // println!("{:x?} {:x?}", &tmsbuf[..num_bytes], &tdibuf[..num_bytes]);
 
                 let tms_vec = &tmsbuf.view_bits::<Lsb0>()[..num_bits];
-                let tdi_vec = &tmsbuf.view_bits::<Lsb0>()[..num_bits];
+                let tdi_vec = &tdibuf.view_bits::<Lsb0>()[..num_bits];
 
                 // println!("{:x?} {:x?}", tms_vec, tdi_vec);
 
-                for i in 0..num_bits {
+                let mut q = Vec::new();
+                let mut accum_states = Vec::new();
+                let mut is_shifting = false;
+                let mut shifting_bits = 0;
+                let mut shift_start_idx = 0;
+
+                let mut i = 0;
+                while i < num_bits {
+                    if i + 5 <= num_bits && tms_vec[i..i + 5] == bits![1; 5] {
+                        q.push(JTAGAction::ResetToTLR);
+                        current_state = JTAGState::TestLogicReset;
+                        let tdi = &tdi_vec[i..i + 5];
+                        if tdi != bits![0; 5] && tdi != bits![1; 5] {
+                            println!("Warn: unknown TDI data (reset TLR) {:?}", tdi);
+                        }
+
+                        i += 5;
+                        continue;
+                    }
+
                     let tms = tms_vec[i];
-                    let _tdi = tdi_vec[i];
-                    current_state = current_state.transition(tms);
-                    println!("--> {:?}", current_state);
+                    // let _tdi = tdi_vec[i];
+                    if current_state == JTAGState::ShiftDR || current_state == JTAGState::ShiftIR {
+                        // println!("shift a bit");
+                        shifting_bits += 1;
+                        current_state = current_state.transition(tms);
+                        if current_state != JTAGState::ShiftDR && current_state != JTAGState::ShiftIR {
+                            println!("shift exited! {} bits", shifting_bits);
+                            q.push(JTAGAction::ShiftBits {
+                                bits_tdi: tdi_vec[shift_start_idx..i + 1].iter().collect(),
+                                capture: true,
+                                tms_exit: true,
+                            });
+                            is_shifting = false;
+                        }
+                    } else {
+                        current_state = current_state.transition(tms);
+                        println!("--> {:?}", current_state);
+                        accum_states.push(current_state);
+
+                        if current_state == JTAGState::ShiftDR || current_state == JTAGState::ShiftIR {
+                            println!("got to a shifting state!");
+                            is_shifting = true;
+                            q.push(JTAGAction::GoViaStates(accum_states.split_off(0)));
+                            shift_start_idx = i + 1;
+                        }
+                    }
+
+                    i += 1;
                 }
+
+                if is_shifting && shifting_bits > 0 {
+                    println!("shift didn't exit! {} bits", shifting_bits);
+                    q.push(JTAGAction::ShiftBits {
+                        bits_tdi: tdi_vec[shift_start_idx..i].iter().collect(),
+                        capture: true,
+                        tms_exit: false,
+                    });
+                }
+                if accum_states.len() > 0 {
+                    q.push(JTAGAction::GoViaStates(accum_states));
+                }
+                println!("q {:?}", q);
 
                 sock.write(&tdobuf[..num_bytes]).unwrap();
             },
