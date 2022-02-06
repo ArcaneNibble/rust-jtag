@@ -7,7 +7,7 @@ use std::net::TcpListener;
 fn main() {
     println!("Hello world!");
 
-    let mut adapter = jtag::drivers::CrabbyTTYPreAlphaJTAG::new();
+    let mut adapter = jtag::drivers::FTDIJTAG::new();
 
     let listener = TcpListener::bind("0.0.0.0:2542").unwrap();
     let (mut sock, addr) = listener.accept().unwrap();

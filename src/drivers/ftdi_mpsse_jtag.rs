@@ -138,7 +138,6 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
 
         // this is the main portion that will be sent as bytes
         let tdi_chunk_ = if tms_exit {
-            assert!(tdi_chunk.len() > 1); // XXX error reporting?
             &tdi_chunk[..(tdi_chunk.len() - 1)]
         } else {
             tdi_chunk
@@ -153,18 +152,20 @@ impl ChunkShifterJTAGAdapter for FTDIJTAG {
             // bytes portion first
             let chunk_bytes = subchunk.len() / 8; // deliberate truncate
 
-            mpsse_bytes.push(ClockData::LsbPosIn as u8); // tdi out on -ve, in on +ve
-            mpsse_bytes.push((chunk_bytes - 1) as u8);
-            mpsse_bytes.push(((chunk_bytes - 1) >> 8) as u8);
+            if chunk_bytes > 0 {
+                mpsse_bytes.push(ClockData::LsbPosIn as u8); // tdi out on -ve, in on +ve
+                mpsse_bytes.push((chunk_bytes - 1) as u8);
+                mpsse_bytes.push(((chunk_bytes - 1) >> 8) as u8);
 
-            let cur_mpsse_len = mpsse_bytes.len();
-            mpsse_bytes.resize(cur_mpsse_len + chunk_bytes, 0u8);
-            mpsse_bytes[cur_mpsse_len..cur_mpsse_len + chunk_bytes]
-                .view_bits_mut::<Lsb0>()
-                .clone_from_bitslice(&subchunk[..chunk_bytes * 8]);
+                let cur_mpsse_len = mpsse_bytes.len();
+                mpsse_bytes.resize(cur_mpsse_len + chunk_bytes, 0u8);
+                mpsse_bytes[cur_mpsse_len..cur_mpsse_len + chunk_bytes]
+                    .view_bits_mut::<Lsb0>()
+                    .clone_from_bitslice(&subchunk[..chunk_bytes * 8]);
 
-            rxbytes_bufsz += chunk_bytes;
-            rxbytes_bytes += chunk_bytes;
+                rxbytes_bufsz += chunk_bytes;
+                rxbytes_bytes += chunk_bytes;
+            }
 
             // bits portion
             let chunk_bits = subchunk.len() % 8;
