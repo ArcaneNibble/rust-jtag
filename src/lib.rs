@@ -4,6 +4,8 @@ mod fsm;
 pub use fsm::JTAGState;
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
+#[non_exhaustive]
+/// Represents all possible actions that can be performed on a JTAG adapter
 pub enum JTAGAction {
     /// Wait for a given number of nanoseconds
     DelayNS(u64),
@@ -65,11 +67,19 @@ pub enum JTAGAction {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
+#[non_exhaustive]
+/// Represents possible results from performing JTAG actions
 pub enum JTAGOutput {
     /// No data was stored for the corresponding JTAG action
     NoData,
     /// Captured TDO data for the corresponding JTAG action
     CapturedBits(BitVec),
+    /// Actual number of nanoseconds delayed by a
+    /// [DelayNS][JTAGAction::DelayNS] command
+    ActualDelay(u64),
+    /// Actual clock speed in Hz set by a
+    /// [SetClkSpeed][JTAGAction::SetClkSpeed] command
+    ActualClkSpeed(u64),
 }
 
 #[derive(Clone, Debug)]
@@ -276,7 +286,7 @@ impl BitbangJTAGAdapterState {
 }
 
 pub trait BitbangJTAGAdapter {
-    fn set_clk_speed(&mut self, clk_hz: u64);
+    fn set_clk_speed(&mut self, clk_hz: u64) -> u64;
     fn shift_one_bit(&mut self, tms: bool, tdi: bool) -> bool;
 }
 
@@ -294,8 +304,8 @@ impl ChunkShifterJTAGAdapterState {
 }
 
 pub trait ChunkShifterJTAGAdapter {
-    fn delay_ns(&mut self, ns: u64);
-    fn set_clk_speed(&mut self, clk_hz: u64);
+    fn delay_ns(&mut self, ns: u64) -> u64;
+    fn set_clk_speed(&mut self, clk_hz: u64) -> u64;
 
     fn shift_tms_chunk(&mut self, tms_chunk: &BitSlice);
     fn shift_tdi_chunk(&mut self, tdi_chunk: &BitSlice, tms_exit: bool);
@@ -457,12 +467,12 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
             }
 
             JTAGAction::DelayNS(ns) => {
-                self.delay_ns(*ns);
-                JTAGOutput::NoData
+                let actual_ns = self.delay_ns(*ns);
+                JTAGOutput::ActualDelay(actual_ns)
             }
             JTAGAction::SetClkSpeed(clk_hz) => {
-                self.set_clk_speed(*clk_hz);
-                JTAGOutput::NoData
+                let actual_clk = self.set_clk_speed(*clk_hz);
+                JTAGOutput::ActualClkSpeed(actual_clk)
             }
             JTAGAction::ResetToTLR => {
                 self.shift_tms_chunk(bits![1; 5]);
@@ -507,11 +517,12 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
 }
 
 impl<T: BitbangJTAGAdapter + AsMut<BitbangJTAGAdapterState>> ChunkShifterJTAGAdapter for T {
-    fn delay_ns(&mut self, ns: u64) {
-        std::thread::sleep(std::time::Duration::from_nanos(ns))
+    fn delay_ns(&mut self, ns: u64) -> u64 {
+        std::thread::sleep(std::time::Duration::from_nanos(ns));
+        ns
     }
-    fn set_clk_speed(&mut self, clk_hz: u64) {
-        BitbangJTAGAdapter::set_clk_speed(self, clk_hz);
+    fn set_clk_speed(&mut self, clk_hz: u64) -> u64 {
+        BitbangJTAGAdapter::set_clk_speed(self, clk_hz)
     }
 
     fn shift_tms_chunk(&mut self, tms_chunk: &BitSlice) {

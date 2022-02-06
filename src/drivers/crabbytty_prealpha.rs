@@ -40,8 +40,9 @@ impl CrabbyTTYPreAlphaJTAG {
 }
 
 impl BitbangJTAGAdapter for CrabbyTTYPreAlphaJTAG {
-    fn set_clk_speed(&mut self, clk_hz: u64) {
+    fn set_clk_speed(&mut self, clk_hz: u64) -> u64 {
         println!("ignoring clock speed {clk_hz} hz");
+        clk_hz
     }
 
     fn shift_one_bit(&mut self, tms: bool, tdi: bool) -> bool {

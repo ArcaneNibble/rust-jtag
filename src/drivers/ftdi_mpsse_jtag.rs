@@ -53,11 +53,13 @@ impl FTDIJTAG {
 }
 
 impl ChunkShifterJTAGAdapter for FTDIJTAG {
-    fn delay_ns(&mut self, ns: u64) {
-        std::thread::sleep(std::time::Duration::from_nanos(ns))
+    fn delay_ns(&mut self, ns: u64) -> u64 {
+        std::thread::sleep(std::time::Duration::from_nanos(ns));
+        ns
     }
-    fn set_clk_speed(&mut self, clk_hz: u64) {
+    fn set_clk_speed(&mut self, clk_hz: u64) -> u64 {
         println!("ignoring clock speed {clk_hz} hz");
+        clk_hz
     }
 
     fn shift_tms_chunk(&mut self, tms_chunk: &BitSlice) {
