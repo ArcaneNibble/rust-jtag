@@ -2,31 +2,6 @@ use crate::*;
 
 use bitvec::prelude::*;
 
-struct TestNativeJTAGAdapter<'a> {
-    jtag_state: JTAGAdapterState,
-    test_actions: &'a [JTAGAction],
-}
-impl<'a> AsMut<JTAGAdapterState> for TestNativeJTAGAdapter<'a> {
-    fn as_mut(&mut self) -> &mut JTAGAdapterState {
-        &mut self.jtag_state
-    }
-}
-impl<'a> TestNativeJTAGAdapter<'a> {
-    fn new(test_actions: &'a [JTAGAction]) -> Self {
-        Self {
-            jtag_state: JTAGAdapterState::new(),
-            test_actions,
-        }
-    }
-}
-
-impl<'a> JTAGAdapter for TestNativeJTAGAdapter<'a> {
-    fn execute_actions(&mut self, actions: &[JTAGAction]) -> Vec<JTAGOutput> {
-        assert_eq!(actions, self.test_actions);
-        vec![JTAGOutput::NoData; actions.len()]
-    }
-}
-
 struct TestBitbangJTAGAdapter {
     jtag_state: JTAGAdapterState,
     chunkshift_state: ChunkShifterJTAGAdapterState,
@@ -129,20 +104,6 @@ impl StateTrackingJTAGAdapter for TestStateJTAGAdapter {
     fn execute_stjtag_action(&mut self, _action: &JTAGAction) -> JTAGOutput {
         todo!()
     }
-}
-
-#[test]
-fn compile_test_trait_obj_safe() {
-    let _: &dyn JTAGAdapter;
-}
-
-#[test]
-fn test_native_adapter_fns() {
-    let mut testadapter = TestNativeJTAGAdapter::new(&[]);
-
-    testadapter.test_actions = &[JTAGAction::ResetToTLR];
-    testadapter.reset_to_tlr();
-    testadapter.flush();
 }
 
 #[test]
