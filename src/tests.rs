@@ -56,7 +56,7 @@ impl TestBitbangJTAGAdapter {
 }
 
 impl BitbangJTAGAdapter for TestBitbangJTAGAdapter {
-    fn set_clk_speed(&mut self, _clk_hz: u64) {
+    fn set_clk_speed(&mut self, _clk_hz: u64) -> u64 {
         todo!()
     }
 
@@ -89,10 +89,10 @@ impl TestChunkJTAGAdapter {
 }
 
 impl ChunkShifterJTAGAdapter for TestChunkJTAGAdapter {
-    fn delay_ns(&mut self, _ns: u64) {
+    fn delay_ns(&mut self, _ns: u64) -> u64 {
         todo!()
     }
-    fn set_clk_speed(&mut self, _clk_hz: u64) {
+    fn set_clk_speed(&mut self, _clk_hz: u64) -> u64 {
         todo!()
     }
 
