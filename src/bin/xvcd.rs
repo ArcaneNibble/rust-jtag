@@ -2,7 +2,7 @@ use bitvec::prelude::*;
 use jtag::*;
 
 use std::io::{Read, Write};
-use std::net::{TcpListener};
+use std::net::TcpListener;
 
 fn main() {
     println!("Hello world!");
@@ -34,7 +34,7 @@ fn main() {
                 }
                 // this seems busted no matter what?
                 sock.write(b"xvcServer_v1.0:512\n").unwrap();
-            },
+            }
             [b's', b'h'] => {
                 sock.read(&mut cmdbuf[..6]).unwrap();
                 if cmdbuf[..6] != [b's', b'h', b'i', b'f', b't', b':'] {
@@ -42,10 +42,10 @@ fn main() {
                     continue;
                 }
                 sock.read(&mut cmdbuf[..4]).unwrap();
-                let num_bits = (cmdbuf[0] as usize) |
-                                ((cmdbuf[1] as usize) << 8) |
-                                ((cmdbuf[2] as usize) << 16) |
-                                ((cmdbuf[3] as usize) << 24);
+                let num_bits = (cmdbuf[0] as usize)
+                    | ((cmdbuf[1] as usize) << 8)
+                    | ((cmdbuf[2] as usize) << 16)
+                    | ((cmdbuf[3] as usize) << 24);
                 let num_bytes = (num_bits + 7) / 8;
                 println!("shift {} bits ({} bytes)", num_bits, num_bytes);
                 if num_bytes > 512 {
@@ -88,7 +88,9 @@ fn main() {
                         // println!("shift a bit");
                         shifting_bits += 1;
                         current_state = current_state.transition(tms);
-                        if current_state != JTAGState::ShiftDR && current_state != JTAGState::ShiftIR {
+                        if current_state != JTAGState::ShiftDR
+                            && current_state != JTAGState::ShiftIR
+                        {
                             println!("shift exited! {} bits", shifting_bits);
                             q.push(JTAGAction::ShiftBits {
                                 bits_tdi: tdi_vec[shift_start_idx..i + 1].iter().collect(),
@@ -102,7 +104,9 @@ fn main() {
                         println!("--> {:?}", current_state);
                         accum_states.push(current_state);
 
-                        if current_state == JTAGState::ShiftDR || current_state == JTAGState::ShiftIR {
+                        if current_state == JTAGState::ShiftDR
+                            || current_state == JTAGState::ShiftIR
+                        {
                             println!("got to a shifting state!");
                             is_shifting = true;
                             q.push(JTAGAction::GoViaStates(accum_states.split_off(0)));
@@ -127,7 +131,7 @@ fn main() {
                 println!("q {:?}", q);
 
                 sock.write(&tdobuf[..num_bytes]).unwrap();
-            },
+            }
             _ => {
                 println!("unknown command! peeked {:x?}", cmdbuf);
             }
