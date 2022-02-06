@@ -1,3 +1,5 @@
+//! Built-in JTAG adapter drivers
+
 mod crabbytty_prealpha;
 pub use crabbytty_prealpha::CrabbyTTYPreAlphaJTAG;
 

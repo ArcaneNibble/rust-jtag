@@ -2,10 +2,21 @@ use crate::*;
 
 use bitvec::prelude::*;
 
+/// Trait for JTAG adapters that can automatically follow the JTAG state
+/// machine
 pub trait StateTrackingJTAGAdapter {
+    /// Execute the given JTAG action and return its result.
+    ///
+    /// The following actions are valid for this type of adapter:
+    /// * [JTAGAction::DelayNS]
+    /// * [JTAGAction::SetClkSpeed]
+    /// * [JTAGAction::ResetToTLR]
+    /// * [JTAGAction::GoViaStates]
+    /// * [JTAGAction::ShiftBits]
     fn execute_stjtag_action(&mut self, action: &JTAGAction) -> JTAGOutput;
 }
 
+/// Automatically turn [ChunkShifterJTAGAdapter] into a [StateTrackingJTAGAdapter]
 impl<T: StateTrackingJTAGAdapter + AsMut<JTAGAdapterState>> JTAGAdapter for T {
     fn execute_actions(&mut self, actions: &[JTAGAction]) -> Vec<JTAGOutput> {
         actions
