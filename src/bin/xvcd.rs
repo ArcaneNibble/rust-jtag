@@ -20,7 +20,7 @@ fn main() {
         let mut cmdbuf = [0u8; 16];
         let mut tmsbuf = [0u8; 512];
         let mut tdibuf = [0u8; 512];
-        let tdobuf = [0u8; 512];
+        let mut tdobuf = [0u8; 512];
 
         let peeklen = sock.peek(&mut cmdbuf[..2]).unwrap();
         if peeklen != 2 {
@@ -61,10 +61,12 @@ fn main() {
 
                 let tms_vec = &tmsbuf.view_bits::<Lsb0>()[..num_bits];
                 let tdi_vec = &tdibuf.view_bits::<Lsb0>()[..num_bits];
+                let tdo_vec = &mut tdobuf.view_bits_mut::<Lsb0>()[..num_bits];
 
                 // println!("{:x?} {:x?}", tms_vec, tdi_vec);
 
                 let mut q = Vec::new();
+                let mut q2 = Vec::new();
                 let mut accum_states = Vec::new();
                 let mut is_shifting = false;
                 let mut shifting_bits = 0;
@@ -74,6 +76,7 @@ fn main() {
                 while i < num_bits {
                     if i + 5 <= num_bits && tms_vec[i..i + 5] == bits![1; 5] {
                         q.push(JTAGAction::ResetToTLR);
+                        q2.push((0, 0));
                         current_state = JTAGState::TestLogicReset;
                         let tdi = &tdi_vec[i..i + 5];
                         if tdi != bits![0; 5] && tdi != bits![1; 5] {
@@ -99,6 +102,7 @@ fn main() {
                                 capture: true,
                                 tms_exit: true,
                             });
+                            q2.push((shift_start_idx, i + 1));
                             is_shifting = false;
                         }
                     } else {
@@ -112,6 +116,7 @@ fn main() {
                             println!("got to a shifting state!");
                             is_shifting = true;
                             q.push(JTAGAction::GoViaStates(accum_states.split_off(0)));
+                            q2.push((0, 0));
                             shift_start_idx = i + 1;
                         }
                     }
@@ -126,14 +131,29 @@ fn main() {
                         capture: true,
                         tms_exit: false,
                     });
+                    q2.push((shift_start_idx, i));
                 }
                 if accum_states.len() > 0 {
                     q.push(JTAGAction::GoViaStates(accum_states));
+                    q2.push((0, 0));
                 }
                 println!("q {:?}", q);
+                println!("q2 {:?}", q2);
+                assert_eq!(q.len(), q2.len());
 
                 let result = adapter.execute_actions(&q);
                 println!("out {:?}", result);
+                assert_eq!(q2.len(), result.len());
+
+                for i in 0..result.len() {
+                    if let JTAGOutput::CapturedBits(bv) = &result[i] {
+                        let (idxstart, idxend) = q2[i];
+                        println!("copying to ({}, {})", idxstart, idxend);
+                        tdo_vec[idxstart..idxend].clone_from_bitslice(bv);
+                    }
+                }
+
+                println!("{:x?}", tdo_vec);
 
                 sock.write(&tdobuf[..num_bytes]).unwrap();
             }
