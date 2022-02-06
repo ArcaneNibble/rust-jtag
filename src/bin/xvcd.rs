@@ -7,6 +7,8 @@ use std::net::TcpListener;
 fn main() {
     println!("Hello world!");
 
+    let mut adapter = jtag::drivers::CrabbyTTYPreAlphaJTAG::new();
+
     let listener = TcpListener::bind("0.0.0.0:2542").unwrap();
     let (mut sock, addr) = listener.accept().unwrap();
     println!("connected to {:?}", addr);
@@ -129,6 +131,9 @@ fn main() {
                     q.push(JTAGAction::GoViaStates(accum_states));
                 }
                 println!("q {:?}", q);
+
+                let result = adapter.execute_actions(&q);
+                println!("out {:?}", result);
 
                 sock.write(&tdobuf[..num_bytes]).unwrap();
             }

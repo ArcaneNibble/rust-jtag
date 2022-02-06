@@ -68,6 +68,8 @@ impl<T: ChunkShifterJTAGAdapter + AsMut<ChunkShifterJTAGAdapterState>> StateTrac
             }
             JTAGAction::ResetToTLR => {
                 self.shift_tms_chunk(bits![1; 5]);
+                let state_data: &mut ChunkShifterJTAGAdapterState = self.as_mut();
+                state_data.current_state = JTAGState::TestLogicReset;
                 JTAGOutput::NoData
             }
             JTAGAction::GoViaStates(jtag_states) => {
