@@ -2,11 +2,37 @@ use crate::*;
 
 use bitvec::prelude::*;
 
+/// Trait for JTAG adapters that are built around bit-banging one clock cycle
+/// at a time
 pub trait BitbangJTAGAdapter {
+    /// Set the clock speed (i.e. the pulse width of one clock cycle)
     fn set_clk_speed(&mut self, clk_hz: u64) -> u64;
+    /// Shift one bit out on TMS/TDI. Capture the value of TDO.
+    ///
+    /// Note: This function assumes that the data capture occurs at _the end_
+    /// of the cycle, i.e.
+    /// <pre>
+    /// TCK  _______|‾‾‾‾‾‾‾|_______
+    /// TDI  ----╳ new val---------╳
+    /// TMS  ----╳ new val---------╳
+    /// TDO  ╳ prev val-----╳ new val
+    /// capture                  ^
+    /// </pre>
+    /// This will be notably _different_ from the FTDI MPSSE implementation,
+    /// i.e.
+    /// <pre>
+    /// TCK  _______|‾‾‾‾‾‾‾|_______
+    /// TDI  ╳ prev val-----╳ new val
+    /// TMS  ╳ prev val-----╳ new val
+    /// TDO  ╳ prev val-----╳ new val
+    /// capture     ^
+    /// </pre>
     fn shift_one_bit(&mut self, tms: bool, tdi: bool) -> bool;
 }
 
+/// State required to be stored by a [BitbangJTAGAdapter] in order for
+/// this crate to automatically implement [ChunkShifterJTAGAdapter] and
+/// eventually [JTAGAdapter] for it.
 #[derive(Clone, Debug)]
 pub struct BitbangJTAGAdapterState {
     last_tdo: bool,
@@ -14,12 +40,16 @@ pub struct BitbangJTAGAdapterState {
 impl BitbangJTAGAdapterState {
     pub fn new() -> Self {
         Self {
-            // FIXME: document wtf is going on here
+            // We need this because of where we capture data and how
+            // that interacts with shifting TDI/TDO
+            //
+            // FIXME: Explain why we do it the way we do
             last_tdo: false,
         }
     }
 }
 
+/// Automatically turn [BitbangJTAGAdapter] into a [ChunkShifterJTAGAdapter]
 impl<T: BitbangJTAGAdapter + AsMut<BitbangJTAGAdapterState>> ChunkShifterJTAGAdapter for T {
     fn delay_ns(&mut self, ns: u64) -> u64 {
         std::thread::sleep(std::time::Duration::from_nanos(ns));
